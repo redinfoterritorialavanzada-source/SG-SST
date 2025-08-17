@@ -7,9 +7,12 @@ from langchain_core.messages import AIMessage
 
 # Import the new SG-SST tools
 from tools.incident_tools import report_incident, list_incidents
+from tools.risk_tools import add_risk, list_risks
 
 # 1. Define the tools for the agent
-tools = [report_incident, list_incidents]
+incident_tools = [report_incident, list_incidents]
+risk_tools = [add_risk, list_risks]
+tools = incident_tools + risk_tools
 tool_map = {tool.name: tool for tool in tools}
 
 # 2. Define the model
