@@ -5,34 +5,28 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AIMessage
 
-# Import the tools
-from tools.employee_tools import add_employee, list_employees
-from tools.payroll_tools import calculate_social_security, calculate_parafiscals, calculate_social_benefits, calculate_withholding_tax
+# Import the new SG-SST tools
+from tools.incident_tools import report_incident, list_incidents
 
 # 1. Define the tools for the agent
-employee_tools = [add_employee, list_employees]
-payroll_tools = [calculate_social_security, calculate_parafiscals, calculate_social_benefits, calculate_withholding_tax]
-tools = employee_tools + payroll_tools
+tools = [report_incident, list_incidents]
 tool_map = {tool.name: tool for tool in tools}
 
 # 2. Define the model
-# Ensure OPENAI_API_KEY is set in your environment
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    # This will be handled more gracefully in the UI, but as a safeguard:
     print("WARNING: OPENAI_API_KEY environment variable not set. Agent will not work.")
     model = None
 else:
     model = ChatOpenAI(temperature=0, streaming=True, api_key=api_key)
     model = model.bind_tools(tools)
 
-# 3. Define the State
+# 3. Define the State (can be the same as the HR agent's state)
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], lambda x, y: x + y]
 
-# 4. Define the Nodes
+# 4. Define the Nodes (identical logic to the HR agent)
 def call_model(state):
-    """Calls the LLM with the current state."""
     if not model:
         return {"messages": [HumanMessage(content="Error: API Key no configurada.")]}
     messages = state['messages']
@@ -57,9 +51,8 @@ def call_tool(state):
             tool_messages.append(ToolMessage(content=f"Error: Tool '{tool_name}' not found.", tool_call_id=tool_call['id']))
     return {"messages": tool_messages}
 
-# 5. Define the Graph Logic (Conditional Edges)
+# 5. Define the Graph Logic (identical to the HR agent)
 def should_continue(state):
-    """Determines whether to continue the loop or end."""
     last_message = state['messages'][-1]
     if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
         return "end"
@@ -73,26 +66,21 @@ workflow.set_entry_point("agent")
 workflow.add_conditional_edges(
     "agent",
     should_continue,
-    {
-        "continue": "action",
-        "end": END,
-    },
+    {"continue": "action", "end": END},
 )
 workflow.add_edge("action", "agent")
 
 # 7. Compile the graph
 app = workflow.compile()
 
-# 8. Wrapper class for easy use
-class HRAgent:
+# 8. Wrapper class
+class SgsstAgent:
     def __init__(self):
         self.graph = app
 
     def invoke(self, query: str):
         if not model:
-            yield {"messages": [HumanMessage(content="Error: OPENAI_API_KEY no está configurada. No puedo procesar tu solicitud.")]}
+            yield {"messages": [HumanMessage(content="Error: OPENAI_API_KEY no está configurada.")]}
             return
-
         inputs = {"messages": [HumanMessage(content=query)]}
-        # Using stream to get intermediate steps
         yield from self.graph.stream(inputs, stream_mode="values")
