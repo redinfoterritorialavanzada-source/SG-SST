@@ -1,16 +1,15 @@
 import flet as ft
 from .employee_view import EmployeeView
+from .payroll_view import PayrollView
 from agent.graph import HRAgent
 
 class MainView(ft.UserControl):
     def __init__(self):
         super().__init__(expand=True)
 
-        # Instantiate the agent
         self.agent = HRAgent()
-
-        # Pass the agent to the employee view
         self.employee_view = EmployeeView(agent=self.agent)
+        self.payroll_view = PayrollView(agent=self.agent)
 
         self.navigation_rail = ft.NavigationRail(
             selected_index=0,
@@ -51,8 +50,5 @@ class MainView(ft.UserControl):
         if index == 0:
             self.content_area.content = self.employee_view
         elif index == 1:
-            # Placeholder for the payroll view
-            self.content_area.content = ft.Column(
-                [ft.Text("Payroll Management", size=24, weight=ft.FontWeight.BOLD)]
-            )
+            self.content_area.content = self.payroll_view
         self.update()

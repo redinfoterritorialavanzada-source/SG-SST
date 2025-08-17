@@ -7,9 +7,12 @@ from langgraph.prebuilt import ToolExecutor, ToolInvocation
 
 # Import the tools
 from tools.employee_tools import add_employee, list_employees
+from tools.payroll_tools import calculate_social_security, calculate_parafiscals, calculate_social_benefits, calculate_withholding_tax
 
 # 1. Define the tools for the agent
-tools = [add_employee, list_employees]
+employee_tools = [add_employee, list_employees]
+payroll_tools = [calculate_social_security, calculate_parafiscals, calculate_social_benefits, calculate_withholding_tax]
+tools = employee_tools + payroll_tools
 tool_executor = ToolExecutor(tools)
 
 # 2. Define the model
